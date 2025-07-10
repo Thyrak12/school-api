@@ -44,14 +44,36 @@ export const createTeacher = async (req, res) => {
  *   get:
  *     summary: Get all teachers
  *     tags: [Teachers]
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema: { type: integer, default: 1 }
+ *         description: Page number
+ *       - in: query
+ *         name: limit
+ *         schema: { type: integer, default: 10 }
+ *         description: Number of items per page
  *     responses:
  *       200:
  *         description: List of teachers
  */
 export const getAllTeachers = async (req, res) => {
+    const limit = parseInt(req.query.limit) || 10;
+    const offset = parseInt(req.query.page) || 1;
+    const totalCount = await db.Teacher.count();
     try {
-        const teachers = await db.Teacher.findAll({ include: db.Course });
-        res.json(teachers);
+        const teachers = await db.Teacher.findAll({
+            //include: db.Course 
+            limit: limit,
+            offset: (offset - 1) * limit
+            });
+        res.json({meta:{
+                totalItems: totalCount,
+                page: offset,
+                totalPages: Math.ceil(totalCount / limit)
+        },
+            data:teachers
+        });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
